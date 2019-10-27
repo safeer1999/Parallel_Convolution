@@ -84,6 +84,15 @@ std::vector<std::vector<float> > convolve(std::vector<std::vector<float> > img, 
 }
 
 
+/*std::vector<std::vector<std::vector<float> > > apply_filter(std::vector<std::vector<float> >  img,int img_shape[],std::vector<std::vector<std::vector<float> > >  filter_bank,int filter_shape[])
+{
+	std::vector<std::vector<std::vector<float> > > convolved_layer;
+	for (int i = 0; i < filter_bank.size(); ++i)
+	{
+		convolved_layer.push_back(convolve(img,img_shape,filter_bank[i],filter_shape,1));
+	}
+}*/
+
 
 
 
@@ -113,10 +122,11 @@ int main(int argc, char const *argv[])
 
 	}*/
 
-	std::vector<std::vector<float> > v1 = {{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}} ;
+	/*std::vector<std::vector<float> > v1 = {{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}} ;
 	std::vector<std::vector<float> > v2 = {{1,2,3},{4,5,6},{7,8,9}} ;
 
-	filtered_img = convolve(v1,{4,4},v2,{3,3},1);
+	int img_shape[] = {4,4};
+	std::vector<std::vector<float> > filtered_img = convolve(v1,img_shape,v2,filter_shape,1);
 
 	for (int i = 0; i < filtered_img.size(); ++i)
 	{
@@ -127,7 +137,7 @@ int main(int argc, char const *argv[])
 		std::cout<<std::endl;
 	}
 
-	/*std::cout<<matrix_sum(v2)<<std::endl;
+	std::cout<<matrix_sum(v2)<<std::endl;
 
 	std::vector<std::vector<float> > product = matrix_multiply(v1,1,1,v2,1,1,2,2);
 
