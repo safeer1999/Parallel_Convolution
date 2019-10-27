@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <random>
+#include <ctime>
 
 class Convolution
 {
@@ -82,6 +83,7 @@ std::vector<std::vector<float> > convolve(std::vector<std::vector<float> > img, 
 
 	return  filtered_img;
 }
+
 
 
 std::vector<std::vector<std::vector<float> > > apply_filter(std::vector<std::vector<float> >  img,int img_shape[],std::vector<std::vector<std::vector<float> > >  filter_bank,int filter_shape[])
