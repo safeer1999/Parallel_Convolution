@@ -111,6 +111,7 @@ int main(int argc, char const *argv[])
 	// displays filters
 	for (int i=0; i<num_filters; ++i)
 	{
+		std::cout<<"Filter "<<i<<std::endl;
 		for (int j = 0; j < filter_shape[0]; ++j)
 		{
 			for (int k = 0; k < filter_shape[1]; ++k)
