@@ -1,7 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <random>
-
+#include <ctime>
 class Convolution
 {
 public:
@@ -12,6 +12,8 @@ public:
 
 void init_filters(int num_filters,int filter_shape[], std::vector<std::vector<std::vector<float> > > &filter_bank)
 {
+	
+
 	std::default_random_engine generator;
 	std::normal_distribution<float> distribution(0.0,0.1);
 
@@ -28,6 +30,8 @@ void init_filters(int num_filters,int filter_shape[], std::vector<std::vector<st
 		}
 
 	}
+
+	
 }
 
 std::vector<std::vector<float> > matrix_multiply(std::vector<std::vector<float> > a,int a_beg_row,int a_beg_col,std::vector<std::vector<float> > b, int b_beg_row,int b_beg_col  ,int row,int col)
@@ -86,6 +90,7 @@ std::vector<std::vector<float> > convolve(std::vector<std::vector<float> > img, 
 
 std::vector<std::vector<std::vector<float> > > apply_filter(std::vector<std::vector<float> >  img,int img_shape[],std::vector<std::vector<std::vector<float> > >  filter_bank,int filter_shape[])
 {
+
 	std::vector<std::vector<std::vector<float> > > convolved_layer;
 	for (int i = 0; i < filter_bank.size(); ++i)
 	{
@@ -93,6 +98,8 @@ std::vector<std::vector<std::vector<float> > > apply_filter(std::vector<std::vec
 	}
 
 	return convolved_layer;
+	
+	
 }
 
 
@@ -109,38 +116,44 @@ int main(int argc, char const *argv[])
 	init_filters(num_filters,filter_shape,filter_bank);
 
 	// displays filters
-	for (int i=0; i<num_filters; ++i)
-	{
-		std::cout<<"Filter "<<i<<std::endl;
-		for (int j = 0; j < filter_shape[0]; ++j)
-		{
-			for (int k = 0; k < filter_shape[1]; ++k)
-			{
-					std::cout<<filter_bank[i][j][k]<<" ";
-			}
-			std::cout<<std::endl;
-		}
-		std::cout<<std::endl;
-	}
+	// for (int i=0; i<num_filters; ++i)
+	// {
+	// 	std::cout<<"Filter "<<i<<std::endl;
+	// 	for (int j = 0; j < filter_shape[0]; ++j)
+	// 	{
+	// 		for (int k = 0; k < filter_shape[1]; ++k)
+	// 		{
+	// 				std::cout<<filter_bank[i][j][k]<<" ";
+	// 		}
+	// 		std::cout<<std::endl;
+	// 	}
+	// 	std::cout<<std::endl;
+	// }
 
 	// applying filters, intermediate output
 	std::vector<std::vector<float> > v1 = {{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}} ;
 	std::vector<std::vector<std::vector<float> >>  v_bank = {{{1,2,3},{4,5,6},{7,8,9}},{{2,4,6},{8,10,12},{14,16,18}}} ;
 	int img_shape[] = {4,4};
-	std::vector<std::vector<std::vector<float> > > convolved_layer = apply_filter(v1,img_shape,v_bank,filter_shape);
 
-	for (int i = 0; i < convolved_layer.size(); ++i)
-	{
-		for (int j = 0; j < convolved_layer[0].size(); ++j)
-		{
-			for (int k = 0; k < convolved_layer[0][0].size(); ++k)
-			{
-				std::cout<<convolved_layer[i][j][k]<<" ";
-			}
-			std::cout<<std::endl;
-		}
-		std::cout<<std::endl;
-	}
+	clock_t beg = clock();
+	std::vector<std::vector<std::vector<float> > > convolved_layer = apply_filter(v1,img_shape,v_bank,filter_shape);
+	clock_t end = clock();
+	std::cout<<double(end-beg)<<std::endl;
+
+	
+	// displaying intermediate output
+	// for (int i = 0; i < convolved_layer.size(); ++i)
+	// {
+	// 	for (int j = 0; j < convolved_layer[0].size(); ++j)
+	// 	{
+	// 		for (int k = 0; k < convolved_layer[0][0].size(); ++k)
+	// 		{
+	// 			std::cout<<convolved_layer[i][j][k]<<" ";
+	// 		}
+	// 		std::cout<<std::endl;
+	// 	}
+	// 	std::cout<<std::endl;
+	// }
 
 	/* std::cout<<matrix_sum(v2)<<std::endl;
 
