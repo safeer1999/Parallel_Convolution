@@ -3,6 +3,11 @@
 #include <random>
 #include <ctime>
 #include <math.h>
+
+using namespace std;
+
+typedef vector<vector<float> > matrix;
+
 class Convolution
 {
 public:
@@ -11,7 +16,7 @@ public:
 	
 };
 
-void print_matrix(std::vector<std::vector<float> > a,int beg_row=0,int beg_col=0,int row=0,int col=0)
+void print_matrix(matrix a,int beg_row=0,int beg_col=0,int row=0,int col=0)// displays a float matrix
 {
 	if (row==0 && col==0)
 	{
@@ -23,16 +28,19 @@ void print_matrix(std::vector<std::vector<float> > a,int beg_row=0,int beg_col=0
 	{
 		for(int j=0;j<col;j++)
 		{
-			std::cout<<a[beg_row+i][beg_col+j]<<" ";
+			cout<<a[beg_row+i][beg_col+j]<<" ";
 		}
-		std::cout<<std::endl;
+		cout<<endl;
 	}
 }
 
-void init_filters(int num_filters,int filter_shape[], std::vector<std::vector<std::vector<float> > > &filter_bank)
+// creates <num_filters> number of filters and stores in filter_bank
+// <filter_shape> -> dimension of each filter
+//<filter_bank>-> array of filters
+void init_filters(int num_filters,int filter_shape[], vector<matrix > &filter_bank)
 {
-	std::default_random_engine generator;
-	std::normal_distribution<float> distribution(0.0,0.1);
+	default_random_engine generator;
+	normal_distribution<float> distribution(0.0,0.1);
 
     
 	for (int i=0; i<num_filters; ++i)
@@ -49,9 +57,12 @@ void init_filters(int num_filters,int filter_shape[], std::vector<std::vector<st
 	}
 }
 
-std::vector<std::vector<float> > matrix_multiply(std::vector<std::vector<float> > a,int a_beg_row,int a_beg_col,std::vector<std::vector<float> > b, int b_beg_row,int b_beg_col  ,int row,int col)
+//multiplies corresponding elements of 2 matrices' submatrix such that sub_mat(a)[<row>][<col>] X sub_mat(b)[<row>][<col>] 
+//<a> -> first matrix
+//<b> -> second matrix
+matrix matrix_multiply(matrix a,int a_beg_row,int a_beg_col,matrix b, int b_beg_row,int b_beg_col  ,int row,int col)
 {
-	std::vector<std::vector<float> > product(row,std::vector<float>(col,0) );
+	matrix product(row,vector<float>(col,0) );
 
 	for (int i = 0; i < row; ++i)
 	{
@@ -59,15 +70,16 @@ std::vector<std::vector<float> > matrix_multiply(std::vector<std::vector<float> 
 		{
 			product[i][j] = a[a_beg_row+i][a_beg_col+j]*b[b_beg_row+i][b_beg_col+j] ;
 
-			//std::cout<<product[i][j]<<" ";
+			//cout<<product[i][j]<<" ";
 		}
-		//std::cout<<std::endl;
+		//cout<<endl;
 	}
 
 	return product;
 }
 
-float matrix_sum(std::vector<std::vector<float> > a)
+//sum of the matrix
+float matrix_sum(matrix a)
 {
 	float sum=0;
 	for (int i = 0; i < a.size(); ++i)
@@ -81,14 +93,17 @@ float matrix_sum(std::vector<std::vector<float> > a)
 	return sum;
 }
 
-std::vector<std::vector<float> > convolve(std::vector<std::vector<float> > img, int img_shape[],std::vector<std::vector<float> > filter, int filter_shape[], int stride)
+//gets an input as an input and filters it using <filter>
+//<img> is the input image
+//<filter> is the applied filter
+matrix convolve(matrix img, int img_shape[],matrix filter, int filter_shape[], int stride)
 {
 
-	std::vector<std::vector<float> > filtered_img;
+	matrix filtered_img;
 
 	for (int i = 0; i <= img_shape[0]-filter_shape[0]; i+=stride)
 	{
-		std::vector<float> v;
+		vector<float> v;
 		for (int j = 0; j <= img_shape[1]-filter_shape[1]; j+=stride)
 		{
 			float masked_values = matrix_sum(matrix_multiply(img,i,j,filter,0,0,filter_shape[0],filter_shape[1]));
@@ -102,10 +117,10 @@ std::vector<std::vector<float> > convolve(std::vector<std::vector<float> > img, 
 }
 
 
-
-std::vector<std::vector<std::vector<float> > > apply_filter(std::vector<std::vector<float> >  img,int img_shape[],std::vector<std::vector<std::vector<float> > >  filter_bank,int filter_shape[])
+//applies multiple filters from the <filter_bank> on the input <img>
+vector<matrix > apply_filter(matrix  img,int img_shape[],vector<matrix >  filter_bank,int filter_shape[])
 {
-	std::vector<std::vector<std::vector<float> > > convolved_layer;
+	vector<matrix > convolved_layer;
 	for (int i = 0; i < filter_bank.size(); ++i)
 	{
 		convolved_layer.push_back(convolve(img,img_shape,filter_bank[i],filter_shape,1));
@@ -114,8 +129,8 @@ std::vector<std::vector<std::vector<float> > > apply_filter(std::vector<std::vec
 	return convolved_layer;
 }
 
-
-float matrix_max(std::vector<std::vector<float> > a,int beg_row,int beg_col, int row,int col)
+// max value in matrix <a>
+float matrix_max(matrix a,int beg_row,int beg_col, int row,int col)
 {
 	float l = -INFINITY;
 	for (int i = 0; i < row; ++i)
@@ -130,16 +145,19 @@ float matrix_max(std::vector<std::vector<float> > a,int beg_row,int beg_col, int
 	}
 }
 
-std::vector<std::vector<float> > apply_maxPool(std::vector<std::vector<float> >  img,int img_shape[],int stride,int pool_dim)
+//applies pooling function on the <img>
+// <stride> -> step size of pooling frame
+// <pool_dime> -> size of the frame
+matrix apply_maxPool(matrix  img,int img_shape[],int stride,int pool_dim)
 {
-	std::vector<std::vector<float> > pooled_img;
+	matrix pooled_img;
 
 	for (int i = 0; i <= img_shape[0]-pool_dim; i+=stride)
 	{
-		std::vector<float> v;
+		vector<float> v;
 		for (int j = 0; j <= img_shape[1]-pool_dim; j+=stride)
 		{
-			//std::cout<<i<<' '<<j<<std::endl;
+			//cout<<i<<' '<<j<<endl;
 			float max_val = matrix_max(img,i,j,pool_dim,pool_dim);
 			v.push_back(max_val);
 
@@ -153,13 +171,14 @@ std::vector<std::vector<float> > apply_maxPool(std::vector<std::vector<float> > 
 
 }
 
-std::vector<std::vector<std::vector<float> > > apply_maxPool_to_filters(std::vector<std::vector<std::vector<float> > >  prev_layer,int img_shape[])
+
+vector<matrix > apply_maxPool_to_filters(vector<matrix >  prev_layer,int img_shape[])
 {
-	std::vector<std::vector<std::vector<float> > > pooled_layer;
+	vector<matrix > pooled_layer;
 
 	for (int i = 0; i < prev_layer.size(); ++i)
 	{
-		std::vector<std::vector<float> > v =  apply_maxPool(prev_layer[i],img_shape,2,2);
+		matrix v =  apply_maxPool(prev_layer[i],img_shape,2,2);
 		pooled_layer.push_back(v);
 	}
 
@@ -171,7 +190,7 @@ float reLU(float x)
 	return x>0 ? x : 0;
 }
 
-void apply_activation(std::vector<std::vector<float> > &inp)
+void apply_activation(matrix &inp)
 {
 	for (int i = 0; i < inp.size(); ++i)
 	{
@@ -182,10 +201,11 @@ void apply_activation(std::vector<std::vector<float> > &inp)
 	}
 }
 
-std::vector<std::vector<std::vector<float> > > feed_through_layer(std::vector<std::vector<float> > img, int img_shape[], std::vector<std::vector<std::vector<float> > > filter_bank,int filter_shape[])
-//void feed_through_layer(std::vector<std::vector<float> > img, int img_shape[], std::vector<std::vector<std::vector<float> > > filter_bank, int filter_shape[])
+//takes an input <img> applies all the filters then takes the output of that and applies the activation function followed by max pooling
+vector<matrix > feed_through_layer(matrix img, int img_shape[], vector<matrix > filter_bank,int filter_shape[])
+//void feed_through_layer(matrix img, int img_shape[], vector<matrix > filter_bank, int filter_shape[])
 {
-	std::vector<std::vector<std::vector<float> > > temp = apply_filter(img,img_shape,filter_bank,filter_shape);
+	vector<matrix > temp = apply_filter(img,img_shape,filter_bank,filter_shape);
 	
 	
 	for(int i=0;i<temp.size();i++)
@@ -202,27 +222,27 @@ int main(int argc, char const *argv[])
 	int img_shape[] = {6,6};
 
 
-	std::vector<std::vector<std::vector<float> >> filter_bank(num_filters,std::vector<std::vector<float>>(filter_shape[0],std::vector<float>(filter_shape[1])));	
+	vector<matrix> filter_bank(num_filters,vector<vector<float>>(filter_shape[0],vector<float>(filter_shape[1])));	
 
 	init_filters(num_filters,filter_shape,filter_bank);
 
-	std::vector<std::vector<float> > img;
+	matrix img;
 	float count=0;
 	for (int i = 0; i < 6; ++i)
 	{
-		std::vector<float> v;
+		vector<float> v;
 		for(int j=0;j<6;j++)
 			v.push_back(++count);
 		img.push_back(v);
 	}	
 
 
-	std::vector<std::vector<std::vector<float> > > final_layer = feed_through_layer(img,img_shape,filter_bank,filter_shape);
+	vector<matrix > final_layer = feed_through_layer(img,img_shape,filter_bank,filter_shape);
 
 	for (int i = 0; i < final_layer.size(); ++i)
 	{
 		print_matrix(final_layer[i]);
-		std::cout<<std::endl;
+		cout<<endl;
 	}
 
 	return 0;
