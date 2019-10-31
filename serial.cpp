@@ -1,7 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <random>
-#include <ctime>
+#include <time.h>
 #include <math.h>
 #include <fstream>
 
@@ -251,12 +251,21 @@ int main(int argc, char const *argv[])
 	int filter_shape[] = {3,3};
 
 
-	vector<matrix> filter_bank(num_filters,vector<vector<float>>(filter_shape[0],vector<float>(filter_shape[1])));	
 
+	vector<matrix> filter_bank(num_filters,vector<vector<float>>(filter_shape[0],vector<float>(filter_shape[1])));	
+	clock_t initTime, loadTime, compTime;
+
+	initTime = clock();
 	init_filters(num_filters,filter_shape,filter_bank);
+	initTime = clock() - initTime;
+	double initT = ((double)initTime)/CLOCKS_PER_SEC;
 
 	char filename[] = "imgs.dat";
+	loadTime = clock();
 	matrix img = load_matrix(filename,100);
+	loadTime = clock() - loadTime;
+	double loadT = ((double)loadTime)/CLOCKS_PER_SEC;
+
 	int img_shape[] = {100,784};
 	/*float count=0;
 	for (int i = 0; i < 6; ++i)
@@ -267,14 +276,20 @@ int main(int argc, char const *argv[])
 		img.push_back(v);
 	}	*/
 
-
+	compTime = clock();
 	vector<matrix > final_layer = feed_through_layer(img,img_shape,filter_bank,filter_shape);
+	compTime = clock() - compTime;
+	double compT = ((double)compTime)/CLOCKS_PER_SEC;
 
 	for (int i = 0; i < final_layer.size(); ++i)
 	{
-		print_matrix(final_layer[i]);
-		cout<<endl;
+		// print_matrix(final_layer[i]);
+		// cout<<endl;
 	}
+
+	cout<<"Initialization time "<<initT<<endl;
+	cout<<"Loading time "<<loadT<<endl;
+	cout<<"Computation time "<<compT<<endl;
 
 	return 0;
 }
