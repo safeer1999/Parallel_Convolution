@@ -3,6 +3,7 @@
 #include <random>
 #include <ctime>
 #include <math.h>
+#include <fstream>
 
 using namespace std;
 
@@ -15,6 +16,34 @@ public:
 	~Convolution();
 	
 };
+
+matrix load_matrix(char filename[],int rows)
+{
+	fstream file;
+	float array[784];
+	matrix dataset;
+
+	file.open("imgs.dat",ios::in|ios::binary);
+
+	if(!file)
+	{
+		cout<<"file not open"<<endl;
+	}
+
+	for (int i = 0; i < rows; ++i)
+	{
+		file.read((char*)array,784*sizeof(float));
+		vector<float> v(array,array+784);
+		dataset.push_back(v);
+	}
+	
+	cout<<"loaded file"<<endl;
+
+	file.close();
+
+	return dataset;
+
+}
 
 void print_matrix(matrix a,int beg_row=0,int beg_col=0,int row=0,int col=0)// displays a float matrix
 {
@@ -34,6 +63,7 @@ void print_matrix(matrix a,int beg_row=0,int beg_col=0,int row=0,int col=0)// di
 	}
 }
 
+
 // creates <num_filters> number of filters and stores in filter_bank
 // <filter_shape> -> dimension of each filter
 //<filter_bank>-> array of filters
@@ -44,7 +74,7 @@ void init_filters(int num_filters,int filter_shape[], vector<matrix > &filter_ba
 
     
 	for (int i=0; i<num_filters; ++i)
-	{
+		{
 		for (int j = 0; j < filter_shape[0]; ++j)
 		{
 			for (int k = 0; k < filter_shape[1]; ++k)
@@ -219,22 +249,23 @@ int main(int argc, char const *argv[])
 {
 	int num_filters = 4;
 	int filter_shape[] = {3,3};
-	int img_shape[] = {6,6};
 
 
 	vector<matrix> filter_bank(num_filters,vector<vector<float>>(filter_shape[0],vector<float>(filter_shape[1])));	
 
 	init_filters(num_filters,filter_shape,filter_bank);
 
-	matrix img;
-	float count=0;
+	char filename[] = "imgs.dat";
+	matrix img = load_matrix(filename,100);
+	int img_shape[] = {100,784};
+	/*float count=0;
 	for (int i = 0; i < 6; ++i)
 	{
 		vector<float> v;
 		for(int j=0;j<6;j++)
 			v.push_back(++count);
 		img.push_back(v);
-	}	
+	}	*/
 
 
 	vector<matrix > final_layer = feed_through_layer(img,img_shape,filter_bank,filter_shape);
