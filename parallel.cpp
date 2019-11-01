@@ -271,19 +271,14 @@ int main(int argc, char const *argv[])
 
 
 	vector<matrix> filter_bank(num_filters,vector<vector<float>>(filter_shape[0],vector<float>(filter_shape[1])));	
-	clock_t initTime, loadTime, compTime;
-	float beg = omp_get_wtime();
+	double beg = omp_get_wtime();
 	init_filters(num_filters,filter_shape,filter_bank);
-	float end = omp_get_wtime();
+	double end = omp_get_wtime();
 	cout<<"Time to initialize filters: "<<end-beg<<endl;
 	
 	beg = omp_get_wtime();
 	char filename[] = "imgs.dat";
-	loadTime = clock();
 	matrix img = load_matrix(filename,100);
-	loadTime = clock() - loadTime;
-	double loadT = ((double)loadTime)/CLOCKS_PER_SEC;
-
 	int img_shape[] = {100,784};
 	end = omp_get_wtime();
 	cout<<"Time to load dataset: "<<end-beg<<endl;
