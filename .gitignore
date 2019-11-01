@@ -2,3 +2,7 @@ a.out
 parallel.exe
 serial.exe
 imgs.dat
+test_parallel.cpp
+index.jpg
+make_dataset.cpp
+test_cimg.cpp

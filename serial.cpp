@@ -4,6 +4,7 @@
 #include <time.h>
 #include <math.h>
 #include <fstream>
+#include <omp.h>
 
 using namespace std;
 
@@ -93,7 +94,7 @@ void init_filters(int num_filters,int filter_shape[], vector<matrix > &filter_ba
 matrix matrix_multiply(matrix a,int a_beg_row,int a_beg_col,matrix b, int b_beg_row,int b_beg_col  ,int row,int col)
 {
 	matrix product(row,vector<float>(col,0) );
-
+	//parallel
 	for (int i = 0; i < row; ++i)
 	{
 		for (int j = 0; j < col; ++j)
@@ -111,6 +112,7 @@ matrix matrix_multiply(matrix a,int a_beg_row,int a_beg_col,matrix b, int b_beg_
 //sum of the matrix
 float matrix_sum(matrix a)
 {
+	//parallel
 	float sum=0;
 	for (int i = 0; i < a.size(); ++i)
 	{
@@ -151,6 +153,7 @@ matrix convolve(matrix img, int img_shape[],matrix filter, int filter_shape[], i
 vector<matrix > apply_filter(matrix  img,int img_shape[],vector<matrix >  filter_bank,int filter_shape[])
 {
 	vector<matrix > convolved_layer;
+	//parallel
 	for (int i = 0; i < filter_bank.size(); ++i)
 	{
 		convolved_layer.push_back(convolve(img,img_shape,filter_bank[i],filter_shape,1));
@@ -205,7 +208,7 @@ matrix apply_maxPool(matrix  img,int img_shape[],int stride,int pool_dim)
 vector<matrix > apply_maxPool_to_filters(vector<matrix >  prev_layer,int img_shape[])
 {
 	vector<matrix > pooled_layer;
-
+	//parallel
 	for (int i = 0; i < prev_layer.size(); ++i)
 	{
 		matrix v =  apply_maxPool(prev_layer[i],img_shape,2,2);
@@ -222,6 +225,7 @@ float reLU(float x)
 
 void apply_activation(matrix &inp)
 {
+	//parallel
 	for (int i = 0; i < inp.size(); ++i)
 	{
 		for (int j = 0; j < inp[0].size(); ++j)
@@ -230,19 +234,30 @@ void apply_activation(matrix &inp)
 		}
 	}
 }
-
 //takes an input <img> applies all the filters then takes the output of that and applies the activation function followed by max pooling
 vector<matrix > feed_through_layer(matrix img, int img_shape[], vector<matrix > filter_bank,int filter_shape[])
 //void feed_through_layer(matrix img, int img_shape[], vector<matrix > filter_bank, int filter_shape[])
 {
+	float beg=0,end=0;
+
+	beg =omp_get_wtime();
 	vector<matrix > temp = apply_filter(img,img_shape,filter_bank,filter_shape);
+	end = omp_get_wtime();
+	cout<<"Time to apply_filter: "<<end-beg<<endl;
 	
-	
+	beg = omp_get_wtime();
 	for(int i=0;i<temp.size();i++)
 		apply_activation(temp[i]);
+	end = omp_get_wtime();
+	cout<<"Time to apply activation: "<<end-beg<<endl;
 
+	beg = omp_get_wtime();
 	int filtered_img_shape[] = {temp[0].size(),temp[0][0].size()};
-	return apply_maxPool_to_filters(temp,filtered_img_shape);
+	temp =  apply_maxPool_to_filters(temp,filtered_img_shape);
+	end = omp_get_wtime();
+	cout<<"Time to perform max pooling: "<<end-beg<<endl;
+
+	return temp;
 }
 
 int main(int argc, char const *argv[])
@@ -254,12 +269,12 @@ int main(int argc, char const *argv[])
 
 	vector<matrix> filter_bank(num_filters,vector<vector<float>>(filter_shape[0],vector<float>(filter_shape[1])));	
 	clock_t initTime, loadTime, compTime;
-
-	initTime = clock();
+	float beg = omp_get_wtime();
 	init_filters(num_filters,filter_shape,filter_bank);
-	initTime = clock() - initTime;
-	double initT = ((double)initTime)/CLOCKS_PER_SEC;
-
+	float end = omp_get_wtime();
+	cout<<"Time to initialize filters: "<<end-beg<<endl;
+	
+	beg = omp_get_wtime();
 	char filename[] = "imgs.dat";
 	loadTime = clock();
 	matrix img = load_matrix(filename,100);
@@ -267,6 +282,8 @@ int main(int argc, char const *argv[])
 	double loadT = ((double)loadTime)/CLOCKS_PER_SEC;
 
 	int img_shape[] = {100,784};
+	end = omp_get_wtime();
+	cout<<"Time to load dataset: "<<end-beg<<endl;
 	/*float count=0;
 	for (int i = 0; i < 6; ++i)
 	{
@@ -275,17 +292,17 @@ int main(int argc, char const *argv[])
 			v.push_back(++count);
 		img.push_back(v);
 	}	*/
-
-	compTime = clock();
+	beg = omp_get_wtime();
 	vector<matrix > final_layer = feed_through_layer(img,img_shape,filter_bank,filter_shape);
-	compTime = clock() - compTime;
-	double compT = ((double)compTime)/CLOCKS_PER_SEC;
+	end = omp_get_wtime();
 
-	for (int i = 0; i < final_layer.size(); ++i)
+	cout<<"Time to perform convolution: "<<end-beg<<endl;
+
+	/*for (int i = 0; i < final_layer.size(); ++i)
 	{
-		// print_matrix(final_layer[i]);
-		// cout<<endl;
-	}
+		print_matrix(final_layer[i]);
+		cout<<endl;
+	}*/
 
 	cout<<"Initialization time "<<initT<<endl;
 	cout<<"Loading time "<<loadT<<endl;

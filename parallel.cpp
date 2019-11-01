@@ -92,17 +92,22 @@ void init_filters(int num_filters,int filter_shape[], vector<matrix > &filter_ba
 //<b> -> second matrix
 matrix matrix_multiply(matrix a,int a_beg_row,int a_beg_col,matrix b, int b_beg_row,int b_beg_col  ,int row,int col)
 {
+	omp_set_num_thread();
 	matrix product(row,vector<float>(col,0) );
 
-	for (int i = 0; i < row; ++i)
+	#pragma omp parallel
 	{
-		for (int j = 0; j < col; ++j)
+		#pragma  omp for collapse(2)
+		for (int i = 0; i < row; ++i)
 		{
-			product[i][j] = a[a_beg_row+i][a_beg_col+j]*b[b_beg_row+i][b_beg_col+j] ;
+			for (int j = 0; j < col; ++j)
+			{
+				product[i][j] = a[a_beg_row+i][a_beg_col+j]*b[b_beg_row+i][b_beg_col+j] ;
 
-			//cout<<product[i][j]<<" ";
+				//cout<<product[i][j]<<" ";
+			}
+			//cout<<endl;
 		}
-		//cout<<endl;
 	}
 
 	return product;
@@ -112,11 +117,17 @@ matrix matrix_multiply(matrix a,int a_beg_row,int a_beg_col,matrix b, int b_beg_
 float matrix_sum(matrix a)
 {
 	float sum=0;
-	for (int i = 0; i < a.size(); ++i)
+
+	omp_set_num_thread(8);
+	#pragma omp parallel
 	{
-		for (int j = 0; j < a[0].size(); ++j)
+		#pragma omp for reduction(+:sum) collapse(2)
+		for (int i = 0; i < a.size(); ++i)
 		{
-			sum+= a[i][j];
+			for (int j = 0; j < a[0].size(); ++j)
+			{
+				sum+= a[i][j];
+			}
 		}
 	}
 
@@ -150,10 +161,14 @@ matrix convolve(matrix img, int img_shape[],matrix filter, int filter_shape[], i
 //applies multiple filters from the <filter_bank> on the input <img>
 vector<matrix > apply_filter(matrix  img,int img_shape[],vector<matrix >  filter_bank,int filter_shape[])
 {
-	vector<matrix > convolved_layer;
-	for (int i = 0; i < filter_bank.size(); ++i)
+	vector<matrix > convolved_layer(filter_bank.size());
+	#pragma omp parallel
 	{
-		convolved_layer.push_back(convolve(img,img_shape,filter_bank[i],filter_shape,1));
+		#pragma omp for
+		for (int i = 0; i < filter_bank.size(); ++i)
+		{
+			convolved_layer[i] = convolve(img,img_shape,filter_bank[i],filter_shape,1);
+		}
 	}
 
 	return convolved_layer;
