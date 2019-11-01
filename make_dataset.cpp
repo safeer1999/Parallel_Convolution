@@ -90,10 +90,10 @@ int main()
 		}
 	}*/
 
-	//save_matrix(65000);
+	save_matrix(65000);
 
 	char filename[] = "imgs.dat";
-	load_matrix(filename,65000);
+	//load_matrix(filename,65000);
 
 
 	/*int a[][3] = {{1,2,3},{4,5,6},{7,8,9}};
