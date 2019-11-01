@@ -4,6 +4,7 @@
 #include <ctime>
 #include <math.h>
 #include <fstream>
+#include <omp.h>
 
 using namespace std;
 
@@ -92,7 +93,7 @@ void init_filters(int num_filters,int filter_shape[], vector<matrix > &filter_ba
 //<b> -> second matrix
 matrix matrix_multiply(matrix a,int a_beg_row,int a_beg_col,matrix b, int b_beg_row,int b_beg_col  ,int row,int col)
 {
-	omp_set_num_thread();
+	//omp_set_num_threads(8);
 	matrix product(row,vector<float>(col,0) );
 
 	#pragma omp parallel
@@ -118,7 +119,7 @@ float matrix_sum(matrix a)
 {
 	float sum=0;
 
-	omp_set_num_thread(8);
+	//omp_set_num_threads(8);
 	#pragma omp parallel
 	{
 		#pragma omp for reduction(+:sum) collapse(2)
@@ -265,16 +266,18 @@ int main(int argc, char const *argv[])
 	int num_filters = 4;
 	int filter_shape[] = {3,3};
 
+	omp_set_num_threads(8);
+
 
 
 	vector<matrix> filter_bank(num_filters,vector<vector<float>>(filter_shape[0],vector<float>(filter_shape[1])));	
 	clock_t initTime, loadTime, compTime;
-
-	initTime = clock();
+	float beg = omp_get_wtime();
 	init_filters(num_filters,filter_shape,filter_bank);
-	initTime = clock() - initTime;
-	double initT = ((double)initTime)/CLOCKS_PER_SEC;
-
+	float end = omp_get_wtime();
+	cout<<"Time to initialize filters: "<<end-beg<<endl;
+	
+	beg = omp_get_wtime();
 	char filename[] = "imgs.dat";
 	loadTime = clock();
 	matrix img = load_matrix(filename,100);
@@ -282,6 +285,8 @@ int main(int argc, char const *argv[])
 	double loadT = ((double)loadTime)/CLOCKS_PER_SEC;
 
 	int img_shape[] = {100,784};
+	end = omp_get_wtime();
+	cout<<"Time to load dataset: "<<end-beg<<endl;
 	/*float count=0;
 	for (int i = 0; i < 6; ++i)
 	{
@@ -290,21 +295,18 @@ int main(int argc, char const *argv[])
 			v.push_back(++count);
 		img.push_back(v);
 	}	*/
-
-	compTime = clock();
+	beg = omp_get_wtime();
 	vector<matrix > final_layer = feed_through_layer(img,img_shape,filter_bank,filter_shape);
-	compTime = clock() - compTime;
-	double compT = ((double)compTime)/CLOCKS_PER_SEC;
+	end = omp_get_wtime();
 
-	for (int i = 0; i < final_layer.size(); ++i)
+	cout<<"Time to perform convolution: "<<end-beg<<endl;
+
+	/*for (int i = 0; i < final_layer.size(); ++i)
 	{
-		// print_matrix(final_layer[i]);
-		// cout<<endl;
-	}
+		print_matrix(final_layer[i]);
+		cout<<endl;
+	}*/
 
-	cout<<"Initialization time "<<initT<<endl;
-	cout<<"Loading time "<<loadT<<endl;
-	cout<<"Computation time "<<compT<<endl;
 
 	return 0;
 }

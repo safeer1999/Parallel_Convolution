@@ -304,9 +304,6 @@ int main(int argc, char const *argv[])
 		cout<<endl;
 	}*/
 
-	cout<<"Initialization time "<<initT<<endl;
-	cout<<"Loading time "<<loadT<<endl;
-	cout<<"Computation time "<<compT<<endl;
 
 	return 0;
 }
