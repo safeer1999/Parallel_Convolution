@@ -178,17 +178,37 @@ vector<matrix > apply_filter(matrix  img,int img_shape[],vector<matrix >  filter
 // max value in matrix <a>
 float matrix_max(matrix a,int beg_row,int beg_col, int row,int col)
 {
-	float l = -INFINITY;
-	for (int i = 0; i < row; ++i)
+	const int ROWS = row;
+	float l[ROWS];
+
+
+	#pragma omp parallel
 	{
-		for (int j = 0; j < col; ++j)
+		#pragma omp for
+		for (int i = 0; i < row; ++i)
 		{
-			if(a[beg_row+i][beg_col+j] > l)
+			l[i] = -INFINITY;
+			for (int j = 0; j < col; ++j)
 			{
-				l = a[beg_row+i][beg_col+j];
+				if(a[beg_row+i][beg_col+j] > l[i])
+				{
+					l[i] = a[beg_row+i][beg_col+j];
+				}
 			}
 		}
 	}
+
+	float l_max = -INFINITY;
+	for(int i=0;i<ROWS;i++)
+	{
+		if(l[i]>l_max)
+		{
+			l_max=l[i];
+		}
+	}
+
+	return l_max;
+
 }
 
 //applies pooling function on the <img>
@@ -220,12 +240,17 @@ matrix apply_maxPool(matrix  img,int img_shape[],int stride,int pool_dim)
 
 vector<matrix > apply_maxPool_to_filters(vector<matrix >  prev_layer,int img_shape[])
 {
-	vector<matrix > pooled_layer;
 
-	for (int i = 0; i < prev_layer.size(); ++i)
+	vector<matrix > pooled_layer(prev_layer.size());
+
+	#pragma omp parallel
 	{
-		matrix v =  apply_maxPool(prev_layer[i],img_shape,2,2);
-		pooled_layer.push_back(v);
+		#pragma omp for
+		for (int i = 0; i < prev_layer.size(); ++i)
+		{
+			matrix v =  apply_maxPool(prev_layer[i],img_shape,2,2);
+			pooled_layer[i] = v;
+		}
 	}
 
 	return pooled_layer;
@@ -238,18 +263,22 @@ float reLU(float x)
 
 void apply_activation(matrix &inp)
 {
-	for (int i = 0; i < inp.size(); ++i)
+
+	#pragma omp parallel
 	{
-		for (int j = 0; j < inp[0].size(); ++j)
+		#pragma omp for collapse(2)
+		for (int i = 0; i < inp.size(); ++i)
 		{
-			inp[i][j] = reLU(inp[i][j]);
+			for (int j = 0; j < inp[0].size(); ++j)
+			{
+				inp[i][j] = reLU(inp[i][j]);
+			}
 		}
 	}
 }
 
 //takes an input <img> applies all the filters then takes the output of that and applies the activation function followed by max pooling
 vector<matrix > feed_through_layer(matrix img, int img_shape[], vector<matrix > filter_bank,int filter_shape[])
-//void feed_through_layer(matrix img, int img_shape[], vector<matrix > filter_bank, int filter_shape[])
 {
 	vector<matrix > temp = apply_filter(img,img_shape,filter_bank,filter_shape);
 	

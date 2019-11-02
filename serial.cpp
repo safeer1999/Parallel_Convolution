@@ -176,6 +176,8 @@ float matrix_max(matrix a,int beg_row,int beg_col, int row,int col)
 			}
 		}
 	}
+
+	return l;
 }
 
 //applies pooling function on the <img>
