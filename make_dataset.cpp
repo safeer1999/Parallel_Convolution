@@ -24,9 +24,8 @@ void print_matrix(matrix a,int beg_row=0,int beg_col=0,int row=0,int col=0)// di
 	}
 }
 
-void save_matrix(int rows)
+void save_matrix(int num)
 {
-	float array[784];
 	fstream file;
 	file.open("imgs.dat",ios::out|ios::binary);
 
@@ -35,14 +34,19 @@ void save_matrix(int rows)
 		cout<<"file not open"<<endl;
 	}
 
-	for (int i = 0; i < rows; ++i)
+	for(int k=0;k<num;k++)
 	{
-		for(int j=0;j<784;j++)
+		float array[200][200];
+		for (int i = 0; i < 200; ++i)
 		{
-			array[j]=random()%1000;
+			for(int j=0;j<200;j++)
+			{
+				array[i][j]= random()%1000;
+			}
 		}
-		file.write((char*)array,784*sizeof(float));
+		file.write((char*)array,200*200*sizeof(float));
 	}
+
 
 	cout<<"saved matrix to file"<<endl;
 
@@ -51,10 +55,11 @@ void save_matrix(int rows)
 
 }
 
-void load_matrix(char filename[],int rows)
+vector<matrix> load_matrix(char filename[],int rows)
 {
 	fstream file;
-	float array[784];
+	float array[200][200];
+	vector<matrix> dataset;
 
 	file.open(filename,ios::in|ios::binary);
 
@@ -62,18 +67,29 @@ void load_matrix(char filename[],int rows)
 	{
 		cout<<"file not open"<<endl;
 	}
-
 	for (int i = 0; i < rows; ++i)
 	{
-		file.read((char*)array,784*sizeof(float));
-		for(int j=0;j<784;j++)
-			cout<<array[j]<<" ";
+		matrix m;
+		file.read((char*)array,200*200*sizeof(float));
+		for(int j=0;j<200;j++)
+		{
+			m.push_back(vector<float>(array[j],array[j]+200));
+		}
+		dataset.push_back(m);
+	}
+
+	for (int i = 0; i < 200; ++i)
+	{
+		for(int j=0;j<200;j++)
+			cout<<array[i][j]<<" ";
 		cout<<endl;
 	}
 	
-	cout<<"loaded file"<<endl;
+	cout<<endl<<endl<<"loaded file"<<endl;
 
 	file.close();
+
+	return dataset;
 
 }
 
@@ -90,10 +106,10 @@ int main()
 		}
 	}*/
 
-	save_matrix(65000);
+	//save_matrix(100);
 
 	char filename[] = "imgs.dat";
-	//load_matrix(filename,65000);
+	load_matrix(filename,100);
 
 
 	/*int a[][3] = {{1,2,3},{4,5,6},{7,8,9}};

@@ -18,27 +18,39 @@ public:
 	
 };
 
-matrix load_matrix(char filename[],int rows)
+//----------------------------------------------------MATRIX OPERATIONS------------------------------------------
+
+vector<matrix> load_matrix(char filename[],int rows)
 {
 	fstream file;
-	float array[784];
-	matrix dataset;
+	float array[200][200];
+	vector<matrix> dataset;
 
-	file.open("imgs.dat",ios::in|ios::binary);
+	file.open(filename,ios::in|ios::binary);
 
 	if(!file)
 	{
 		cout<<"file not open"<<endl;
 	}
-
 	for (int i = 0; i < rows; ++i)
 	{
-		file.read((char*)array,784*sizeof(float));
-		vector<float> v(array,array+784);
-		dataset.push_back(v);
+		matrix m;
+		file.read((char*)array,200*200*sizeof(float));
+		for(int j=0;j<200;j++)
+		{
+			m.push_back(vector<float>(array[j],array[j]+200));
+		}
+		dataset.push_back(m);
 	}
+
+	/*for (int i = 0; i < 200; ++i)
+	{
+		for(int j=0;j<200;j++)
+			cout<<array[i][j]<<" ";
+		cout<<endl;
+	}*/
 	
-	cout<<"loaded file"<<endl;
+	cout<<endl<<endl<<"loaded file"<<endl;
 
 	file.close();
 
@@ -61,30 +73,6 @@ void print_matrix(matrix a,int beg_row=0,int beg_col=0,int row=0,int col=0)// di
 			cout<<a[beg_row+i][beg_col+j]<<" ";
 		}
 		cout<<endl;
-	}
-}
-
-
-// creates <num_filters> number of filters and stores in filter_bank
-// <filter_shape> -> dimension of each filter
-//<filter_bank>-> array of filters
-void init_filters(int num_filters,int filter_shape[], vector<matrix > &filter_bank)
-{
-	default_random_engine generator;
-	normal_distribution<float> distribution(0.0,0.1);
-
-    
-	for (int i=0; i<num_filters; ++i)
-		{
-		for (int j = 0; j < filter_shape[0]; ++j)
-		{
-			for (int k = 0; k < filter_shape[1]; ++k)
-			{
-				float number = distribution(generator);
-				filter_bank[i][j][k] = number;
-			}
-		}
-
 	}
 }
 
@@ -135,6 +123,70 @@ float matrix_sum(matrix a)
 	return sum;
 }
 
+// max value in matrix <a>
+float matrix_max(matrix a,int beg_row,int beg_col, int row,int col)
+{
+	const int ROWS = row;
+	float l[ROWS];
+
+
+	#pragma omp parallel
+	{
+		#pragma omp for
+		for (int i = 0; i < row; ++i)
+		{
+			l[i] = -INFINITY;
+			for (int j = 0; j < col; ++j)
+			{
+				if(a[beg_row+i][beg_col+j] > l[i])
+				{
+					l[i] = a[beg_row+i][beg_col+j];
+				}
+			}
+		}
+	}
+
+	float l_max = -INFINITY;
+	for(int i=0;i<ROWS;i++)
+	{
+		if(l[i]>l_max)
+		{
+			l_max=l[i];
+		}
+	}
+
+	return l_max;
+
+}
+//------------------------------------------------------------------------------------------------------------
+
+//------------------------------------------------------------------CONVOLUTION OPERATIONS--------------------
+
+// creates <num_filters> number of filters and stores in filter_bank
+// <filter_shape> -> dimension of each filter
+//<filter_bank>-> array of filters
+void init_filters(int num_filters,int filter_shape[], vector<matrix > &filter_bank)
+{
+	default_random_engine generator;
+	normal_distribution<float> distribution(0.0,0.1);
+
+    
+	for (int i=0; i<num_filters; ++i)
+		{
+		for (int j = 0; j < filter_shape[0]; ++j)
+		{
+			for (int k = 0; k < filter_shape[1]; ++k)
+			{
+				float number = distribution(generator);
+				filter_bank[i][j][k] = number;
+			}
+		}
+
+	}
+}
+
+
+
 //gets an input as an input and filters it using <filter>
 //<img> is the input image
 //<filter> is the applied filter
@@ -175,41 +227,7 @@ vector<matrix > apply_filter(matrix  img,int img_shape[],vector<matrix >  filter
 	return convolved_layer;
 }
 
-// max value in matrix <a>
-float matrix_max(matrix a,int beg_row,int beg_col, int row,int col)
-{
-	const int ROWS = row;
-	float l[ROWS];
 
-
-	#pragma omp parallel
-	{
-		#pragma omp for
-		for (int i = 0; i < row; ++i)
-		{
-			l[i] = -INFINITY;
-			for (int j = 0; j < col; ++j)
-			{
-				if(a[beg_row+i][beg_col+j] > l[i])
-				{
-					l[i] = a[beg_row+i][beg_col+j];
-				}
-			}
-		}
-	}
-
-	float l_max = -INFINITY;
-	for(int i=0;i<ROWS;i++)
-	{
-		if(l[i]>l_max)
-		{
-			l_max=l[i];
-		}
-	}
-
-	return l_max;
-
-}
 
 //applies pooling function on the <img>
 // <stride> -> step size of pooling frame
@@ -277,6 +295,10 @@ void apply_activation(matrix &inp)
 	}
 }
 
+//-----------------------------------------------------------------------------------------------------------
+
+//---------------------------------------------------------DRIVER FUNCTIONS-----------------------------------
+
 //takes an input <img> applies all the filters then takes the output of that and applies the activation function followed by max pooling
 vector<matrix > feed_through_layer(matrix img, int img_shape[], vector<matrix > filter_bank,int filter_shape[])
 {
@@ -307,29 +329,29 @@ int main(int argc, char const *argv[])
 	
 	beg = omp_get_wtime();
 	char filename[] = "imgs.dat";
-	matrix img = load_matrix(filename,100);
-	int img_shape[] = {100,784};
+	vector <matrix> imgs = load_matrix(filename,100);
+	int img_shape[] = {200,200};
 	end = omp_get_wtime();
-	cout<<"Time to load dataset: "<<end-beg<<endl;
-	/*float count=0;
-	for (int i = 0; i < 6; ++i)
-	{
-		vector<float> v;
-		for(int j=0;j<6;j++)
-			v.push_back(++count);
-		img.push_back(v);
-	}	*/
+	cout<<"Time to load dataset: "<<end-beg<<endl<<"Loaded file: "<<filename<<endl;
+
 	beg = omp_get_wtime();
-	vector<matrix > final_layer = feed_through_layer(img,img_shape,filter_bank,filter_shape);
+	#pragma omp parallel
+	{
+		float init=0,final=0;
+		#pragma omp for
+		for (int i = 0; i < 100; ++i)
+		{
+			init = omp_get_wtime();
+			vector<matrix > final_layer = feed_through_layer(imgs[i],img_shape,filter_bank,filter_shape);
+			final = omp_get_wtime();
+
+			cout<<"Time to perform convolution on image "<<i<<": "<<final-init<<endl;
+		}
+	}
 	end = omp_get_wtime();
 
-	cout<<"Time to perform convolution: "<<end-beg<<endl;
+	cout<<endl<<"time for all images: "<<end-beg<<endl;
 
-	/*for (int i = 0; i < final_layer.size(); ++i)
-	{
-		print_matrix(final_layer[i]);
-		cout<<endl;
-	}*/
 
 
 	return 0;
