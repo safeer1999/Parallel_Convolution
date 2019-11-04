@@ -297,9 +297,9 @@ int main(int argc, char const *argv[])
 	beg = omp_get_wtime();
 	for (int i = 0; i < 100; ++i)
 	{
-		float init = omp_get_wtime();
+		double init = omp_get_wtime();
 		vector<matrix > final_layer = feed_through_layer(imgs[i],img_shape,filter_bank,filter_shape);
-		float final = omp_get_wtime();
+		double final = omp_get_wtime();
 
 		cout<<"Time to perform convolution on image "<<i<<": "<<final-init<<endl;
 	}

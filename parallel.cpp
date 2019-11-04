@@ -337,7 +337,7 @@ int main(int argc, char const *argv[])
 	beg = omp_get_wtime();
 	#pragma omp parallel
 	{
-		float init=0,final=0;
+		double init=0,final=0;
 		#pragma omp for
 		for (int i = 0; i < 100; ++i)
 		{
