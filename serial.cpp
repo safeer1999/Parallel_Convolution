@@ -5,6 +5,7 @@
 #include <math.h>
 #include <fstream>
 #include <omp.h>
+#include <string.h>
 
 using namespace std;
 
@@ -18,25 +19,119 @@ public:
 	
 };
 
-vector<matrix> load_matrix(char filename[],int rows)
+void convert_string_to_float(char row[], float row_float[], int len)
+{
+	char* split = strtok(row,", ");
+
+	for (int i = 0; i < len; i++)
+	{
+		row_float[i]=stof(split);
+		//cout<<split<<endl;
+		split = strtok(NULL,", ");
+	}
+}
+
+void to_dat(char filename[],char new_file[])
+{
+	fstream text_file,dat_file;
+
+	text_file.open(filename,ios::in);
+	dat_file.open(new_file,ios::out|ios::binary);
+
+	char row[3200];
+	text_file.getline(row,3199);
+	char* split;
+	split = strtok(row,"(,)");
+	const int ROWS = stoi(split);
+	split = strtok(NULL,"(,)");
+	const int COL = stoi(split);
+	dat_file.write((char*)&ROWS,sizeof(int));
+	dat_file.write((char*)&COL,sizeof(int));
+	float row_float[COL];
+	int count=0;
+
+
+
+	while(text_file)
+	{
+		count++;
+		if(text_file.getline(row,3199))
+		{
+		convert_string_to_float(row,row_float,COL);
+		dat_file.write((char*)row_float,COL*sizeof(float));
+		//cout<<count<<endl;
+		}
+		
+	}
+
+}
+
+string convert_float_to_string(float row_float[],int len)
+{
+	string row_string;
+	for (int i = 0; i < len; ++i)
+	{
+		//cout<<row_float[i]<<endl;
+		row_string.append(to_string(row_float[i]));
+		row_string.append(", ");
+	}
+	return row_string;
+}
+
+void to_txt(char filename[],char new_file[])
+{
+	fstream text_file,dat_file;
+
+	dat_file.open(filename,ios::in|ios::binary);
+	text_file.open(new_file,ios::out);
+
+	int rows,cols;
+	dat_file.read((char*)&rows,sizeof(int));
+	dat_file.read((char*)&cols,sizeof(int));
+
+	const int ROWS = rows;
+	const int COL  = cols;
+
+	float row_float[COL];
+
+	text_file<<"("<<ROWS<<","<<COL<<")"<<endl;
+	while(dat_file)
+	{
+		dat_file.read((char*)row_float,COL*sizeof(float));
+		string row_string=convert_float_to_string(row_float,COL);
+		//cout<<row_string<<endl;
+		text_file<<row_string<<endl;
+
+	}
+
+}
+
+
+vector<matrix> load_matrix(char filename[],int num)
 {
 	fstream file;
-	float array[200][200];
 	vector<matrix> dataset;
+	int rows,col;
 
 	file.open(filename,ios::in|ios::binary);
+	file.read((char*)&rows,sizeof(int));
+	file.read((char*)&col,sizeof(int));
+	const int ROWS=rows;
+	const int COL=col;
+	float array[ROWS][COL];
 
 	if(!file)
 	{
 		cout<<"file not open"<<endl;
 	}
-	for (int i = 0; i < rows; ++i)
+
+	for (int i = 0; i < num; ++i)
 	{
 		matrix m;
-		file.read((char*)array,200*200*sizeof(float));
-		for(int j=0;j<200;j++)
+		file.read((char*)array,ROWS*COL*sizeof(float));
+		for(int j=0;j<ROWS;j++)
 		{
-			m.push_back(vector<float>(array[j],array[j]+200));
+			m.push_back(vector<float>(array[j],array[j]+COL));
 		}
 		dataset.push_back(m);
 	}
@@ -55,6 +150,7 @@ vector<matrix> load_matrix(char filename[],int rows)
 	return dataset;
 
 }
+
 
 void print_matrix(matrix a,int beg_row=0,int beg_col=0,int row=0,int col=0)// displays a float matrix
 {
@@ -272,7 +368,7 @@ vector<matrix > feed_through_layer(matrix img, int img_shape[], vector<matrix > 
 	return temp;
 }
 
-int main(int argc, char const *argv[])
+/*int main(int argc, char const *argv[])
 {
 	int num_filters = 4;
 	int filter_shape[] = {3,3};
@@ -300,6 +396,48 @@ int main(int argc, char const *argv[])
 		double init = omp_get_wtime();
 		vector<matrix > final_layer = feed_through_layer(imgs[i],img_shape,filter_bank,filter_shape);
 		double final = omp_get_wtime();
+
+		cout<<"Time to perform convolution on image "<<i<<": "<<final-init<<endl;
+	}
+	end = omp_get_wtime();
+
+	cout<<endl<<"time for all images: "<<end-beg<<endl;
+
+
+
+	return 0;
+}*/
+
+int main(int argc, char const *argv[])
+{
+	int num_filters = 4;
+	int filter_shape[] = {3,3};
+
+	omp_set_num_threads(8);
+
+
+
+	vector<matrix> filter_bank(num_filters,vector<vector<float>>(filter_shape[0],vector<float>(filter_shape[1])));	
+	double beg = omp_get_wtime();
+	init_filters(num_filters,filter_shape,filter_bank);
+	double end = omp_get_wtime();
+	cout<<"Time to initialize filters: "<<end-beg<<endl;
+	
+	beg = omp_get_wtime();
+	char filename[] = "imgs.dat";
+	//to_dat("index.txt",filename);
+	vector <matrix> imgs = load_matrix(filename,20);
+	int img_shape[] = {imgs[0].size(),imgs[0][0].size()};
+	cout<<img_shape[0]<<", "<<img_shape[1]<<endl;
+	end = omp_get_wtime();
+	cout<<"Time to load dataset: "<<end-beg<<endl<<"Loaded file: "<<filename<<endl;
+
+	beg = omp_get_wtime();
+	for (int i = 0; i < 20; ++i)
+	{
+		float init = omp_get_wtime();
+		vector<matrix > final_layer = feed_through_layer(imgs[i],img_shape,filter_bank,filter_shape);
+		float final = omp_get_wtime();
 
 		cout<<"Time to perform convolution on image "<<i<<": "<<final-init<<endl;
 	}
