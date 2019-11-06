@@ -5,6 +5,7 @@
 #include <math.h>
 #include <fstream>
 #include <omp.h>
+#include <string.h>
 
 using namespace std;
 
@@ -17,28 +18,121 @@ public:
 	~Convolution();
 	
 };
+//--------------------------------------------------------SAVE/LOAD MATRICES----------------------------------
 
-//----------------------------------------------------MATRIX OPERATIONS------------------------------------------
+void convert_string_to_float(char row[], float row_float[], int len)
+{
+	char* split = strtok(row,", ");
 
-vector<matrix> load_matrix(char filename[],int rows)
+	for (int i = 0; i < len; i++)
+	{
+		row_float[i]=stof(split);
+		//cout<<split<<endl;
+		split = strtok(NULL,", ");
+	}
+}
+
+void to_dat(char filename[],char new_file[])
+{
+	fstream text_file,dat_file;
+
+	text_file.open(filename,ios::in);
+	dat_file.open(new_file,ios::out|ios::binary);
+
+	char row[3200];
+	text_file.getline(row,3199);
+	char* split;
+	split = strtok(row,"(,)");
+	const int ROWS = stoi(split);
+	split = strtok(NULL,"(,)");
+	const int COL = stoi(split);
+	dat_file.write((char*)&ROWS,sizeof(int));
+	dat_file.write((char*)&COL,sizeof(int));
+	float row_float[COL];
+	int count=0;
+
+
+
+	while(text_file)
+	{
+		count++;
+		if(text_file.getline(row,3199))
+		{
+		convert_string_to_float(row,row_float,COL);
+		dat_file.write((char*)row_float,COL*sizeof(float));
+		//cout<<count<<endl;
+		}
+		
+	}
+
+}
+
+string convert_float_to_string(float row_float[],int len)
+{
+	string row_string;
+	for (int i = 0; i < len; ++i)
+	{
+		//cout<<row_float[i]<<endl;
+		row_string.append(to_string(row_float[i]));
+		row_string.append(", ");
+	}
+	return row_string;
+}
+
+void to_txt(char filename[],char new_file[])
+{
+	fstream text_file,dat_file;
+
+	dat_file.open(filename,ios::in|ios::binary);
+	text_file.open(new_file,ios::out);
+
+	int rows,cols;
+	dat_file.read((char*)&rows,sizeof(int));
+	dat_file.read((char*)&cols,sizeof(int));
+
+	const int ROWS = rows;
+	const int COL  = cols;
+
+	float row_float[COL];
+
+	text_file<<"("<<ROWS<<","<<COL<<")"<<endl;
+	while(dat_file)
+	{
+		dat_file.read((char*)row_float,COL*sizeof(float));
+		string row_string=convert_float_to_string(row_float,COL);
+		//cout<<row_string<<endl;
+		text_file<<row_string<<endl;
+
+	}
+
+}
+
+
+vector<matrix> load_matrix(char filename[],int num)
 {
 	fstream file;
-	float array[200][200];
 	vector<matrix> dataset;
+	int rows,col;
 
 	file.open(filename,ios::in|ios::binary);
+	file.read((char*)&rows,sizeof(int));
+	file.read((char*)&col,sizeof(int));
+	const int ROWS=rows;
+	const int COL=col;
+	float array[ROWS][COL];
 
 	if(!file)
 	{
 		cout<<"file not open"<<endl;
 	}
-	for (int i = 0; i < rows; ++i)
+
+	for (int i = 0; i < num; ++i)
 	{
 		matrix m;
-		file.read((char*)array,200*200*sizeof(float));
-		for(int j=0;j<200;j++)
+		file.read((char*)array,ROWS*COL*sizeof(float));
+		for(int j=0;j<ROWS;j++)
 		{
-			m.push_back(vector<float>(array[j],array[j]+200));
+			m.push_back(vector<float>(array[j],array[j]+COL));
 		}
 		dataset.push_back(m);
 	}
@@ -57,6 +151,9 @@ vector<matrix> load_matrix(char filename[],int rows)
 	return dataset;
 
 }
+
+
+//----------------------------------------------------MATRIX OPERATIONS------------------------------------------
 
 void print_matrix(matrix a,int beg_row=0,int beg_col=0,int row=0,int col=0)// displays a float matrix
 {
@@ -193,17 +290,15 @@ void init_filters(int num_filters,int filter_shape[], vector<matrix > &filter_ba
 matrix convolve(matrix img, int img_shape[],matrix filter, int filter_shape[], int stride)
 {
 
-	matrix filtered_img;
+	matrix filtered_img(img_shape[0]-filter_shape[0]+1,vector<float>(img_shape[1]-filter_shape[1],0));
 
+	#pragma omp parallel for collapse(2)
 	for (int i = 0; i <= img_shape[0]-filter_shape[0]; i+=stride)
 	{
-		vector<float> v;
 		for (int j = 0; j <= img_shape[1]-filter_shape[1]; j+=stride)
 		{
-			float masked_values = matrix_sum(matrix_multiply(img,i,j,filter,0,0,filter_shape[0],filter_shape[1]));
-			v.push_back(masked_values);
+			filtered_img[i][j] = matrix_sum(matrix_multiply(img,i,j,filter,0,0,filter_shape[0],filter_shape[1]));
 		}
-		filtered_img.push_back(v);
 
 	}
 
@@ -234,19 +329,17 @@ vector<matrix > apply_filter(matrix  img,int img_shape[],vector<matrix >  filter
 // <pool_dime> -> size of the frame
 matrix apply_maxPool(matrix  img,int img_shape[],int stride,int pool_dim)
 {
-	matrix pooled_img;
+	matrix pooled_img(img_shape[0]-pool_dim+1, vector<float>(img_shape[1]-pool_dim+1));
 
+	#pragma omp parallel for collapse(2)
 	for (int i = 0; i <= img_shape[0]-pool_dim; i+=stride)
 	{
-		vector<float> v;
 		for (int j = 0; j <= img_shape[1]-pool_dim; j+=stride)
 		{
 			//cout<<i<<' '<<j<<endl;
-			float max_val = matrix_max(img,i,j,pool_dim,pool_dim);
-			v.push_back(max_val);
+			pooled_img[i][j] = matrix_max(img,i,j,pool_dim,pool_dim);
 
 		}
-		pooled_img.push_back(v);
 	}
 
 	return pooled_img;
@@ -312,11 +405,12 @@ vector<matrix > feed_through_layer(matrix img, int img_shape[], vector<matrix > 
 	return apply_maxPool_to_filters(temp,filtered_img_shape);
 }
 
+
 int main(int argc, char const *argv[])
 {
 	int num_filters = 4;
 	int filter_shape[] = {3,3};
-	int num_images = 5;
+	int num_images = 20;
 	int num_threads = 8;
 
 	omp_set_dynamic(0);     // disable dynamic teams
@@ -333,23 +427,20 @@ int main(int argc, char const *argv[])
 	beg = omp_get_wtime();
 	char filename[] = "imgs.dat";
 	vector <matrix> imgs = load_matrix(filename,num_images);
-	int img_shape[] = {200,200};
+	int img_shape[] = {imgs[0].size(),imgs[0][0].size()};
+	cout<<img_shape[0]<<", "<<img_shape[1]<<endl;
 	end = omp_get_wtime();
 	cout<<"Time to load dataset: "<<end-beg<<endl<<"Loaded file: "<<filename<<endl;
 
 	beg = omp_get_wtime();
-	#pragma omp parallel
+	#pragma omp parallel for
+	for (int i = 0; i < num_images; ++i)
 	{
-		double init=0,final=0;
-		#pragma omp for
-		for (int i = 0; i < num_images; ++i)
-		{
-			init = omp_get_wtime();
-			vector<matrix > final_layer = feed_through_layer(imgs[i],img_shape,filter_bank,filter_shape);
-			final = omp_get_wtime();
+		float init = omp_get_wtime();
+		vector<matrix > final_layer = feed_through_layer(imgs[i],img_shape,filter_bank,filter_shape);
+		float final = omp_get_wtime();
 
-			cout<<"Time to perform convolution on image "<<i<<": "<<final-init<<endl;
-		}
+		cout<<"Time to perform convolution on image "<<i<<": "<<final-init<<endl;
 	}
 	end = omp_get_wtime();
 

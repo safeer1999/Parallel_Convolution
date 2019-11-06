@@ -33,7 +33,10 @@ void save_matrix(int num)
 	{
 		cout<<"file not open"<<endl;
 	}
-
+	int rows=200;
+	int col=200;
+	file.write((char*)&rows,sizeof(int));
+	file.write((char*)&col,sizeof(int));
 	for(int k=0;k<num;k++)
 	{
 		float array[200][200];
@@ -44,7 +47,6 @@ void save_matrix(int num)
 				array[i][j]= random()%1000;
 			}
 		}
-		file.write((char*)array,200*200*sizeof(float));
 	}
 
 
@@ -106,10 +108,10 @@ int main()
 		}
 	}*/
 
-	//save_matrix(100);
+	save_matrix(100);
 
 	char filename[] = "imgs.dat";
-	load_matrix(filename,100);
+	//load_matrix(filename,100);
 
 
 	/*int a[][3] = {{1,2,3},{4,5,6},{7,8,9}};

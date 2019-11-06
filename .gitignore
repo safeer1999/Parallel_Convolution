@@ -6,3 +6,6 @@ test_parallel.cpp
 index.jpg
 make_dataset.cpp
 test_cimg.cpp
+index.dat
+index.txt
+index_back.txt
