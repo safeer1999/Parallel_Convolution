@@ -318,10 +318,11 @@ vector<matrix > feed_through_layer(matrix img, int img_shape[], vector<matrix > 
 
 
 int caller(int num_images, int num_threads)
-{
+{   
+    double total_time=omp_get_wtime();
 	int num_filters = 4;
 	int filter_shape[] = {3,3};
-	cout<<"Number of threads: "<<num_threads<<"\n";
+	cout<<"----------------------------"<<endl<<"Number of threads: "<<num_threads<<"\n";
 
 	omp_set_dynamic(0);     // disable dynamic teams
 	omp_set_num_threads(num_threads);
@@ -364,7 +365,7 @@ int caller(int num_images, int num_threads)
 	end = omp_get_wtime();
     double par_time = end-beg;
 	cout<<endl<<"Parallelizable code runtime: "<<par_time<<endl;
-    double total_time = par_time + init_time + load_time;
+    total_time = omp_get_wtime()-total_time;
     cout<<"Total execution time: "<<total_time<<endl;
     double frac_enh = par_time/total_time;
     cout<<"Fraction Enhanced: "<<frac_enh<<endl;
@@ -391,7 +392,7 @@ int main(int argc, char const *argv[]){
 
     fstream datalog;
     datalog.open("data.csv", ios::out);
-    datalog << "no of threads,execution time,fraction enhanced,speedup,\n";
+    datalog << "no of threads,execution time,fraction enhanced,speedup\n";
     datalog.close();
     // vector<int> all_num_threads{1, 4, 6, 8, 12, 16};
     vector<int> all_num_threads{1, 2, 4, 6, 8, 12, 16, 24, 32};
