@@ -289,13 +289,13 @@ int main(int argc, char const *argv[])
 	
 	beg = omp_get_wtime();
 	char filename[] = "imgs.dat";
-	vector <matrix> imgs = load_matrix(filename,100);
+	vector <matrix> imgs = load_matrix(filename,5);
 	int img_shape[] = {200,200};
 	end = omp_get_wtime();
 	cout<<"Time to load dataset: "<<end-beg<<endl<<"Loaded file: "<<filename<<endl;
 
 	beg = omp_get_wtime();
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < 5; ++i)
 	{
 		double init = omp_get_wtime();
 		vector<matrix > final_layer = feed_through_layer(imgs[i],img_shape,filter_bank,filter_shape);

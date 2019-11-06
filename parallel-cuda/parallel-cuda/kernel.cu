@@ -5,10 +5,21 @@
 #include <math.h>
 #include <fstream>
 #include <omp.h>
+#include <cstdlib>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+
+
 
 using namespace std;
+typedef vector<vector<float>> matrix;
 
-typedef vector<vector<float> > matrix;
+
+#define BLOCK_SIZE 16
+
+
 
 class Convolution
 {
@@ -98,6 +109,10 @@ void init_filters(int num_filters, int filter_shape[], vector<matrix >& filter_b
 	}
 }
 
+__global__ void cuda_matrix_multiply(matrix a, int a_beg_row, int a_beg_col, matrix b, int b_beg_row, int b_beg_col, int row, int col) {
+	;
+}
+
 //multiplies corresponding elements of 2 matrices' submatrix such that sub_mat(a)[<row>][<col>] X sub_mat(b)[<row>][<col>] 
 //<a> -> first matrix
 //<b> -> second matrix
@@ -118,6 +133,7 @@ matrix matrix_multiply(matrix a, int a_beg_row, int a_beg_col, matrix b, int b_b
 
 	return product;
 }
+
 
 //sum of the matrix
 float matrix_sum(matrix a)

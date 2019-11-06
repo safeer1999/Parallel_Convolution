@@ -316,8 +316,11 @@ int main(int argc, char const *argv[])
 {
 	int num_filters = 4;
 	int filter_shape[] = {3,3};
+	int num_images = 5;
+	int num_threads = 8;
 
-	omp_set_num_threads(8);
+	omp_set_dynamic(0);     // disable dynamic teams
+	omp_set_num_threads(num_threads);
 
 
 
@@ -329,7 +332,7 @@ int main(int argc, char const *argv[])
 	
 	beg = omp_get_wtime();
 	char filename[] = "imgs.dat";
-	vector <matrix> imgs = load_matrix(filename,100);
+	vector <matrix> imgs = load_matrix(filename,num_images);
 	int img_shape[] = {200,200};
 	end = omp_get_wtime();
 	cout<<"Time to load dataset: "<<end-beg<<endl<<"Loaded file: "<<filename<<endl;
@@ -339,7 +342,7 @@ int main(int argc, char const *argv[])
 	{
 		double init=0,final=0;
 		#pragma omp for
-		for (int i = 0; i < 100; ++i)
+		for (int i = 0; i < num_images; ++i)
 		{
 			init = omp_get_wtime();
 			vector<matrix > final_layer = feed_through_layer(imgs[i],img_shape,filter_bank,filter_shape);
