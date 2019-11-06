@@ -290,17 +290,15 @@ void init_filters(int num_filters,int filter_shape[], vector<matrix > &filter_ba
 matrix convolve(matrix img, int img_shape[],matrix filter, int filter_shape[], int stride)
 {
 
-	matrix filtered_img;
+	matrix filtered_img(img_shape[0]-filter_shape[0]+1,vector<float>(img_shape[1]-filter_shape[1],0));
 
+	#pragma omp parallel for collapse(2)
 	for (int i = 0; i <= img_shape[0]-filter_shape[0]; i+=stride)
 	{
-		vector<float> v;
 		for (int j = 0; j <= img_shape[1]-filter_shape[1]; j+=stride)
 		{
-			float masked_values = matrix_sum(matrix_multiply(img,i,j,filter,0,0,filter_shape[0],filter_shape[1]));
-			v.push_back(masked_values);
+			filtered_img[i][j] = matrix_sum(matrix_multiply(img,i,j,filter,0,0,filter_shape[0],filter_shape[1]));
 		}
-		filtered_img.push_back(v);
 
 	}
 
@@ -331,19 +329,17 @@ vector<matrix > apply_filter(matrix  img,int img_shape[],vector<matrix >  filter
 // <pool_dime> -> size of the frame
 matrix apply_maxPool(matrix  img,int img_shape[],int stride,int pool_dim)
 {
-	matrix pooled_img;
+	matrix pooled_img(img_shape[0]-pool_dim+1, vector<float>(img_shape[1]-pool_dim+1));
 
+	#pragma omp parallel for collapse(2)
 	for (int i = 0; i <= img_shape[0]-pool_dim; i+=stride)
 	{
-		vector<float> v;
 		for (int j = 0; j <= img_shape[1]-pool_dim; j+=stride)
 		{
 			//cout<<i<<' '<<j<<endl;
-			float max_val = matrix_max(img,i,j,pool_dim,pool_dim);
-			v.push_back(max_val);
+			pooled_img[i][j] = matrix_max(img,i,j,pool_dim,pool_dim);
 
 		}
-		pooled_img.push_back(v);
 	}
 
 	return pooled_img;
@@ -414,7 +410,7 @@ int main(int argc, char const *argv[])
 {
 	int num_filters = 4;
 	int filter_shape[] = {3,3};
-	int num_images = 5;
+	int num_images = 20;
 	int num_threads = 8;
 
 	omp_set_dynamic(0);     // disable dynamic teams
@@ -430,7 +426,7 @@ int main(int argc, char const *argv[])
 	
 	beg = omp_get_wtime();
 	char filename[] = "imgs.dat";
-	vector <matrix> imgs = load_matrix(filename,20);
+	vector <matrix> imgs = load_matrix(filename,num_images);
 	int img_shape[] = {imgs[0].size(),imgs[0][0].size()};
 	cout<<img_shape[0]<<", "<<img_shape[1]<<endl;
 	end = omp_get_wtime();
@@ -438,7 +434,7 @@ int main(int argc, char const *argv[])
 
 	beg = omp_get_wtime();
 	#pragma omp parallel for
-	for (int i = 0; i < 20; ++i)
+	for (int i = 0; i < num_images; ++i)
 	{
 		float init = omp_get_wtime();
 		vector<matrix > final_layer = feed_through_layer(imgs[i],img_shape,filter_bank,filter_shape);
